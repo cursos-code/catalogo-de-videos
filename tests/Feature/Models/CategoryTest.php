@@ -74,5 +74,7 @@ class CategoryTest extends TestCase
         $category->delete();
         $this->assertCount(2, Category::withTrashed()->get());
         $this->assertCount(1, Category::all());
+        $category->restore();
+        $this->assertCount(2, Category::all());
     }
 }

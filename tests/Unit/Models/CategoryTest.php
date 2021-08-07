@@ -28,21 +28,21 @@ class CategoryTest extends TestCase
             Uuid::class
         ];
         $classTraits = array_keys(class_uses(Category::class));
-        self::assertEquals($traits, $classTraits);
+        $this->assertEquals($traits, $classTraits);
     }
 
     public function testIfPropertiesAreCorrect()
     {
         $fillable = ['name', 'description', 'is_active'];
-        self::assertEquals($fillable, $this->category->getFillable());
+        $this->assertEquals($fillable, $this->category->getFillable());
         $dates = ['deleted_at', 'created_at', 'updated_at'];
         foreach ($this->category->getDates() as $date) {
-            self::assertContains($date, $dates);
+            $this->assertContains($date, $dates);
         }
         $casts = ['id' => 'string', 'is_active' => 'boolean'];
-        self::assertEqualsCanonicalizing($casts, $this->category->getCasts());
+        $this->assertEqualsCanonicalizing($casts, $this->category->getCasts());
         $incrementing = false;
-        self::assertEquals($incrementing, $this->category->getIncrementing());
+        $this->assertEquals($incrementing, $this->category->getIncrementing());
     }
 
 }

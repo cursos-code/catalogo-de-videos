@@ -69,5 +69,7 @@ class GenreTest extends TestCase
         $genre->delete();
         $this->assertCount(2, Genre::withTrashed()->get());
         $this->assertCount(1, Genre::all());
+        $genre->restore();
+        $this->assertCount(2, Genre::all());
     }
 }
