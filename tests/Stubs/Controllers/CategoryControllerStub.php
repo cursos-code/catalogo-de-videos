@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace Tests\Stubs\Controllers;
 
 use App\Http\Controllers\BasicCrudController;
-use App\Models\Category;
+use Tests\Stubs\Models\CategoryStub;
 
-class CategoryController extends BasicCrudController
+class CategoryControllerStub extends BasicCrudController
 {
 
     protected function getModel()
     {
-        return Category::class;
+        return CategoryStub::class;
     }
 
     protected function getRules()
