@@ -2,6 +2,8 @@
   <a href="http://nestjs.com/" target="blank"><img src="http://maratona.fullcycle.com.br/public/img/logo-maratona.png"/></a>
 </p>
 
+# Alteração para rodar o CI pelo actions do github
+
 ## Descrição
 
 Microsserviço de catálogo
