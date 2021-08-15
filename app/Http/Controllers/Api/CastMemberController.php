@@ -3,22 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\BasicCrudController;
-use App\Models\Category;
+use App\Models\CastMember;
 
-class CategoryController extends BasicCrudController
+class CastMemberController extends BasicCrudController
 {
 
     protected function getModel()
     {
-        return Category::class;
+        return CastMember::class;
     }
 
     protected function getRules()
     {
         return [
             'name' => 'required|max:255',
-            'is_active' => 'boolean',
-            'description' => 'nullable'
+            'type' => 'integer'
         ];
     }
 }

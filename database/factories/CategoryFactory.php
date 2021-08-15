@@ -8,6 +8,7 @@ use Faker\Generator as Faker;
 $factory->define(Category::class, function (Faker $faker) {
     return [
         'name' => $faker->colorName,
-        'description' => rand(1, 10) % 2 === 0 ? $faker->sentence() : null
+        'description' => rand(1, 10) % 2 === 0 ? $faker->sentence() : null,
+        'is_active' => rand(1,100) % 2 === 0
     ];
 });
