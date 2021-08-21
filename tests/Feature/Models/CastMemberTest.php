@@ -33,23 +33,23 @@ class CastMemberTest extends TestCase
     public function testCreatingNewCastMember()
     {
         /** @var CastMember $castMember */
-        $castMember = CastMember::create(['name' => 'test', 'type' => 1]);
+        $castMember = CastMember::create(['name' => 'test', 'type' => CastMember::TYPE_ACTOR]);
         $castMember->refresh();
         $this->assertTrue(Uuid::isValid($castMember->id));
         $this->assertEquals('test', $castMember->name);
-        $this->assertEquals($castMember->type, 1);
+        $this->assertEquals($castMember->type, CastMember::TYPE_ACTOR);
 
-        $castMember = CastMember::create(['name' => 'test', 'type' => 2]);
-        $this->assertEquals($castMember->type, 2);
+        $castMember = CastMember::create(['name' => 'test', 'type' => CastMember::TYPE_DIRECTOR]);
+        $this->assertEquals($castMember->type, CastMember::TYPE_DIRECTOR);
     }
 
     public function testEditingCastMember()
     {
         /** @var CastMember $castMember */
         $castMember = factory(CastMember::class)->create(
-            ['type' => 1]
+            ['type' => CastMember::TYPE_ACTOR]
         )->first();
-        $data = ['name' => 'test', 'type' => 2];
+        $data = ['name' => 'test', 'type' => CastMember::TYPE_DIRECTOR];
         $castMember->update($data);
 
         $this->assertTrue(Uuid::isValid($castMember->id));

@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\TestResponse;
 trait InvalidationTrait
 {
 
+    protected abstract function getValidations($model = null);
+
     protected function assertValidationRules(string $method, string $rule, array $validations)
     {
         foreach ($validations as $validation) {

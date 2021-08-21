@@ -17,7 +17,12 @@ class CastMemberController extends BasicCrudController
     {
         return [
             'name' => 'required|max:255',
-            'type' => 'integer'
+            'type' => 'required|integer|in:'.implode(',', [CastMember::TYPE_ACTOR, CastMember::TYPE_DIRECTOR])
         ];
+    }
+
+    protected function getUpdateRules()
+    {
+        return $this->getRules();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 abstract class BasicCrudController extends Controller
@@ -10,6 +11,8 @@ abstract class BasicCrudController extends Controller
     protected abstract function getModel();
 
     protected abstract function getRules();
+
+    protected abstract function getUpdateRules();
 
     public function index()
     {
@@ -31,7 +34,7 @@ abstract class BasicCrudController extends Controller
 
     public function update(Request $request, $id)
     {
-        $this->validate($request, $this->getRules());
+        $this->validate($request, $this->getUpdateRules());
         $model = $this->findOrFail($id);
         $model->update($request->all());
         $model->refresh();

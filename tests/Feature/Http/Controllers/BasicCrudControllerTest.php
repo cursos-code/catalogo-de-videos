@@ -26,10 +26,10 @@ class BasicCrudControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-            foreach ($this->stubs as $stub) {
-                $stub['model']::dropTable();
-                $stub['model']::createTable();
-            }
+        foreach ($this->stubs as $stub) {
+            $stub['model']::dropTable();
+            $stub['model']::createTable();
+        }
     }
 
     protected function tearDown(): void
@@ -68,8 +68,8 @@ class BasicCrudControllerTest extends TestCase
             $request->shouldReceive('all')
                 ->once()
                 ->andReturn($stub['create']);
-            $model = (new $stub['controller'])->store($request);
-            $this->assertEquals((new $stub['model'])::find(1)->toArray(), $model->toArray());
+            $response = (new $stub['controller'])->store($request);
+            $this->assertEquals((new $stub['model'])::find(1)->toArray(), $response->toArray());
         }
     }
 
@@ -92,7 +92,7 @@ class BasicCrudControllerTest extends TestCase
         $reflection = new \ReflectionClass(BasicCrudController::class);
         $method = $reflection->getMethod('findOrFail');
         $method->setAccessible(true);
-        $stub = $this->stubs[rand(0, count($this->stubs) -1)];
+        $stub = $this->stubs[rand(0, count($this->stubs) - 1)];
 
         $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
         $result = $method->invokeArgs((new $stub['controller']), [0]);
@@ -103,10 +103,10 @@ class BasicCrudControllerTest extends TestCase
     {
         foreach ($this->stubs as $stub) {
             $modelStub = $stub['model']::create($stub['create']);
-            $model = (new $stub['controller'])->show($modelStub->id);
+            $response = (new $stub['controller'])->show($modelStub->id);
 
             foreach ($stub['create'] as $field) {
-                $this->assertEquals($modelStub->{$field}, $model->{$field});
+                $this->assertEquals($modelStub->{$field}, $response->{$field});
             }
         }
     }
@@ -120,8 +120,8 @@ class BasicCrudControllerTest extends TestCase
                 ->atLeast()
                 ->once()
                 ->andReturn($modelStub->toArray());
-            $model = (new $stub['controller'])->update($request, $modelStub->id);
-            $this->assertEquals((new $stub['model'])::find($modelStub->id)->toArray(), $model->toArray());
+            $response = (new $stub['controller'])->update($request, $modelStub->id);
+            $this->assertEquals((new $stub['model'])::find($modelStub->id)->toArray(), $response->toArray());
         }
     }
 
@@ -129,8 +129,9 @@ class BasicCrudControllerTest extends TestCase
     {
         foreach ($this->stubs as $stub) {
             $modelStub = $stub['model']::create($stub['create']);
-            $model = (new $stub['controller'])->destroy($modelStub->id);
-            $this->assertEquals(204, $model->status());
+            $response = (new $stub['controller'])->destroy($modelStub->id);
+            $this->createTestResponse($response)->assertStatus(204);
+            $this->assertCount(0, $modelStub::all());
         }
     }
 
