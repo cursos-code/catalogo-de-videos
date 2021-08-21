@@ -39,7 +39,7 @@ class GenreTest extends TestCase
         foreach ($this->genre->getDates() as $date) {
             $this->assertContains($date, $dates);
         }
-        $casts = ['id' => 'string', 'is_active' => 'boolean'];
+        $casts = ['id' => 'string', 'is_active' => 'boolean', 'categories_id' => 'array'];
         $this->assertEqualsCanonicalizing($casts, $this->genre->getCasts());
         $incrementing = false;
         $this->assertEquals($incrementing, $this->genre->getIncrementing());

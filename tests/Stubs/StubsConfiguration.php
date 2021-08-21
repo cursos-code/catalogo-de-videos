@@ -22,6 +22,18 @@ trait StubsConfiguration
                 'model' => \Tests\Stubs\Models\CastMemberStub::class,
                 'controller' => \Tests\Stubs\Controllers\CastMemberControllerStub::class,
                 'create' => ['name' => 'test', 'type' => 1]
+            ],
+            [
+                'model' => \Tests\Stubs\Models\VideoStub::class,
+                'controller' => \Tests\Stubs\Controllers\VideoControllerStub::class,
+                'create' => [
+                    'title' => 'video title',
+                    'description' => 'video description',
+                    'year_launched' => 2020,
+                    'opened' => false,
+                    'rating' => 'L',
+                    'duration' => 60
+                ]
             ]
         ];
     }

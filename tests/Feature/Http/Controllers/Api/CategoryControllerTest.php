@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\CategoryController;
 use App\Models\Category;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Ramsey\Uuid\Uuid;
@@ -11,7 +12,12 @@ class CategoryControllerTest extends TestCase
 {
 
     use DatabaseMigrations;
-    use InvalidationTrait, StoreTrait;
+    use InvalidationTrait, StoreTrait, ValidateRuleStruct;
+
+    public function testValidationsStruct()
+    {
+        $this->assertValidationStructRules(CategoryController::class);
+    }
 
     public function testIndex()
     {
@@ -85,34 +91,7 @@ class CategoryControllerTest extends TestCase
 
     public function testInvalidationDataOnPost()
     {
-        $validations = [
-            'required' => [
-                [
-                    'name' => [
-                        'route' => route('categories.store'),
-                        'params' => []
-                    ]
-                ]
-            ],
-            'max.string' => [
-                [
-                    'name' => [
-                        'route' => route('categories.store'),
-                        'routeParams' => ['max' => 255],
-                        'params' => ['name' => str_repeat('_', 256)]
-                    ]
-                ]
-            ],
-            'boolean' => [
-                [
-                    'is_active' => [
-                        'route' => route('categories.store'),
-                        'params' => ['name' => str_repeat('_', 255), 'is_active' => 3]
-                    ]
-                ]
-            ]
-        ];
-        foreach ($validations as $key => $validation) {
+        foreach ($this->getValidations() as $key => $validation) {
             $this->assertValidationRules('post', $key, $validation);
         }
     }
@@ -120,34 +99,7 @@ class CategoryControllerTest extends TestCase
     public function testInvalidationDataOnPut()
     {
         $category = factory(Category::class)->create();
-        $validations = [
-            'required' => [
-                [
-                    'name' => [
-                        'route' => route('categories.update', ['category' => $category->id]),
-                        'params' => ['name' => '']
-                    ]
-                ]
-            ],
-            'max.string' => [
-                [
-                    'name' => [
-                        'route' => route('categories.update', ['category' => $category->id]),
-                        'routeParams' => ['max' => 255],
-                        'params' => ['name' => str_repeat('_', 256)]
-                    ]
-                ]
-            ],
-            'boolean' => [
-                [
-                    'is_active' => [
-                        'route' => route('categories.update', ['category' => $category->id]),
-                        'params' => ['is_active' => 3]
-                    ]
-                ]
-            ]
-        ];
-        foreach ($validations as $key => $validation) {
+        foreach ($this->getValidations($category) as $key => $validation) {
             $this->assertValidationRules('put', $key, $validation);
         }
     }
@@ -168,5 +120,59 @@ class CategoryControllerTest extends TestCase
     protected function getStructure(): array
     {
         return ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at', 'deleted_at'];
+    }
+
+    protected function getValidations($model = null)
+    {
+        $data = [
+            'name' => 'category',
+            'description' => 'description',
+            'is_active' => true,
+        ];
+        return [
+            'required' => [
+                [
+                    'name' => [
+                        'route' => route(
+                            $model ? 'categories.update' : 'categories.store',
+                            $model ? ['category' => $model->id] : []
+                        ),
+                        'params' => array_merge($data, ['name' => null])
+                    ]
+                ]
+            ],
+            'max.string' => [
+                [
+                    'name' => [
+                        'route' => route(
+                            $model ? 'categories.update' : 'categories.store',
+                            $model ? ['category' => $model->id] : []
+                        ),
+                        'routeParams' => ['max' => 255],
+                        'params' => array_merge($data, ['name' => str_repeat('_', 256)])
+                    ]
+                ]
+            ],
+            'boolean' => [
+                [
+                    'is_active' => [
+                        'route' => route(
+                            $model ? 'categories.update' : 'categories.store',
+                            $model ? ['category' => $model->id] : []
+                        ),
+                        'params' => array_merge($data, ['is_active' => 3])
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    public function getStruct()
+    {
+        return [
+            'name' => 'required|max:255',
+            'is_active' => 'boolean',
+            'description' => 'nullable'
+        ];
     }
 }

@@ -13,13 +13,14 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+//Route::middleware('auth:api')->get('/user', function (Request $request) {
+//    return $request->user();
+//});
 
 Route::group(['namespace' => 'Api'], function () {
     Route::resource('categories', 'CategoryController', ['except' => ['create', 'edit']]);
     Route::resource('genres', 'GenreController', ['except' => ['create', 'edit']]);
-    Route::resource('castMembers', 'CastMemberController', ['except' => ['create', 'edit']]);
+    Route::resource('cast_members', 'CastMemberController', ['except' => ['create', 'edit']]);
+    Route::resource('videos', 'VideoController', ['except' => ['create', 'edit']]);
 });
 

@@ -20,4 +20,9 @@ class GenreControllerStub extends BasicCrudController
             'is_active' => 'boolean'
         ];
     }
+
+    protected function getUpdateRules()
+    {
+        return $this->getRules();
+    }
 }

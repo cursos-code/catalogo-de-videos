@@ -3,23 +3,20 @@
 namespace Tests\Stubs\Controllers;
 
 use App\Http\Controllers\BasicCrudController;
-use Tests\Stubs\Models\CastMemberStub;
-use Tests\Stubs\Models\CategoryStub;
+use Tests\Stubs\Models\CategoryVideoStub;
+use Tests\Stubs\Models\VideoStub;
 
-class CastMemberControllerStub extends BasicCrudController
+class GenreVideoControllerStub extends BasicCrudController
 {
 
     protected function getModel()
     {
-        return CastMemberStub::class;
+        return CategoryVideoStub::class;
     }
 
     protected function getRules()
     {
-        return [
-            'name' => 'required|max:255',
-            'type' => 'integer'
-        ];
+        return [];
     }
 
     protected function getUpdateRules()

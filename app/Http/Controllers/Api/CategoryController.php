@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\BasicCrudController;
 use App\Models\Category;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 class CategoryController extends BasicCrudController
 {
@@ -21,4 +23,10 @@ class CategoryController extends BasicCrudController
             'description' => 'nullable'
         ];
     }
+
+    protected function getUpdateRules()
+    {
+        return $this->getRules();
+    }
+
 }
