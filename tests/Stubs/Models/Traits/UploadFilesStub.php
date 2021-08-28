@@ -2,28 +2,16 @@
 
 namespace Tests\Stubs\Models\Traits;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
+use App\Models\Traits\UploadFiles;
 
-class UploadFiles extends Model
+class UploadFilesStub
 {
-    protected $table = 'categories_stub';
-    protected $fillable = ['name', 'description', 'is_active'];
+    use UploadFiles;
 
-    public static function createTable()
+    public static $fileFields = ['file1', 'file2'];
+
+    protected function uploadDir()
     {
-        \Schema::create('categories_stub', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name');
-            $table->text('description')->nullable(true);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        return '1';
     }
-
-    public static function dropTable()
-    {
-        \Schema::dropIfExists('categories_stub');
-    }
-
 }
