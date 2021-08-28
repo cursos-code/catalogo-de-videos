@@ -7,9 +7,8 @@ use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Video;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\Uuid;
-use Tests\Exceptions\TestException;
 use Tests\TestCase;
 
 class VideoControllerTest extends TestCase
@@ -42,27 +41,9 @@ class VideoControllerTest extends TestCase
     public function testStore()
     {
         $route = route('videos.store');
-        $category = Category::create(['name' => 'test', 'description' => 'test']);
-        $genre = Genre::create(['name' => 'test']);
-        $data = [
-            'title' => 'video title',
-            'description' => 'video description',
-            'year_launched' => 2020,
-            'opened' => false,
-            'rating' => 'L',
-            'duration' => 60,
-        ];
-        $this->assertStore(
-            $route,
-            $data + [
-                'categories_id' => [$category->id],
-                'genres_id' => [$genre->id]
-            ],
-            $data + ['deleted_at' => null]
-        );
-
-        $category = Category::create(['name' => 'test', 'description' => 'test']);
-        $genre = Genre::create(['name' => 'test']);
+        $category = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $genre = factory(Genre::class)->create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
         $data = [
             'title' => 'new title',
             'description' => 'video description',
@@ -83,21 +64,14 @@ class VideoControllerTest extends TestCase
         $this->assertDateByRegex($response, ['created_at', 'updated_at']);
     }
 
-    public function testUpdate()
+    public function testStoreWithFiles()
     {
-        $category = Category::create(['name' => 'test', 'description' => 'test']);
+        $route = route('videos.store');
+        $category = Category::create(['name' => 'test', 'description' => 'description']);
         $genre = Genre::create(['name' => 'test']);
-        $video = Video::create([
-                                   'title' => 'video title',
-                                   'description' => 'video description',
-                                   'year_launched' => 2020,
-                                   'opened' => false,
-                                   'rating' => 'L',
-                                   'duration' => 60,
-                                   'categories_id' => [$category->id],
-                                   'genres_id' => [$genre->id]
-                               ]);
-        $route = route('videos.update', ['video' => $video->id]);
+        $genre->categories()->sync([$category->id]);
+        \Storage::fake();
+        $file = UploadedFile::fake()->create('video.mp4')->size(Video::MAX_UPLOAD_SIZE);
         $data = [
             'title' => 'new title',
             'description' => 'video description',
@@ -106,12 +80,52 @@ class VideoControllerTest extends TestCase
             'rating' => '18',
             'duration' => 60,
         ];
-        $response = $this->assertUpdate(
+        $response = $this->assertStore(
             $route,
             $data + [
                 'categories_id' => [$category->id],
-                'genres_id' => [$genre->id]
+                'genres_id' => [$genre->id],
+                'video_file' => $file
             ],
+            $data + ['title' => 'video title', 'deleted_at' => null]
+        );
+
+        \Storage::assertExists("{$response->json('id')}/{$file->hashName()}");
+
+        $this->assertDateByRegex($response, ['created_at', 'updated_at']);
+    }
+
+    public function testUpdate()
+    {
+        $category = factory(Category::class)->create();
+        $category2 = factory(Category::class)->create();
+        $genre = factory(Genre::class)->create();
+        $video = factory(Video::class)->create(
+            [
+                'title' => 'video title',
+                'description' => 'video description',
+                'year_launched' => 2020,
+                'opened' => false,
+                'rating' => 'L',
+                'duration' => 60,
+            ]
+        );
+        $genre->categories()->sync([$category->id, $category2->id]);
+        $route = route('videos.update', ['video' => $video->id]);
+        $data = [
+            'title' => 'new title',
+            'description' => 'video description',
+            'year_launched' => 2015,
+            'opened' => true,
+            'rating' => '18',
+            'duration' => 60
+        ];
+        $response = $this->assertUpdate(
+            $route,
+            array_merge($data, [
+                'categories_id' => [$category->id, $category2->id],
+                'genres_id' => [$genre->id]
+            ]),
             $data + ['title' => 'new title', 'deleted_at' => null]
         );
 
@@ -134,44 +148,73 @@ class VideoControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function testRollbackOnStore()
+    public function testInvalidateStoreWithDeletedCategory()
     {
+        $route = route('videos.store');
+        $category = Category::create(['name' => 'test', 'description' => 'test']);
+        $genre = Genre::create(['name' => 'test']);
+        $category->delete();
         $data = [
-            'title' => 'new title',
+            'title' => 'video title',
             'description' => 'video description',
-            'year_launched' => 2015,
-            'opened' => true,
-            'rating' => '18',
+            'year_launched' => 2020,
+            'opened' => false,
+            'rating' => 'L',
             'duration' => 60,
-            'categories_id' => [1],
-            'genres_id' => [1]
+            'categories_id' => [$category->id],
+            'genres_id' => [$genre->id]
         ];
-        $controller = \Mockery::mock(VideoController::class)
-            ->shouldAllowMockingProtectedMethods()
-            ->makePartial();
-        $controller->shouldReceive('getRules')
-            ->withAnyArgs()
-            ->andReturn([]);
-        $controller->shouldReceive('validate')
-            ->withAnyArgs()
-            ->andReturn($data);
-        $controller->shouldReceive('handleRelations')
-            ->once()
-            ->andThrow(new TestException(''));
-
-        $request = \Mockery::mock(Request::class);
-
-        try {
-            $controller->store($request);
-        } catch (TestException $e) {
-            self::assertCount(0, $controller->index());
-        }
+        $response = $this->withHeaders(['Accept' => 'application/json'])->post($route, $data);
+        $response->assertJsonValidationErrors(['categories_id']);
+        $response->assertJsonFragment(
+            [
+                \Lang::get("validation.exists", ['attribute' => 'categories id'])
+            ]
+        );
     }
 
-    public function testRelations()
+    public function testInvalidateUpdateWithDeletedCategory()
+    {
+        $route = route('videos.store');
+        $category = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $genre = factory(Genre::class)->create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
+        $data = [
+            'title' => 'video title',
+            'description' => 'video description',
+            'year_launched' => 2020,
+            'opened' => false,
+            'rating' => 'L',
+            'duration' => 60,
+            'categories_id' => [$category->id],
+            'genres_id' => [$genre->id]
+        ];
+        $result = $this->withHeaders(['Accept' => 'application/json'])->post($route, $data)->json();
+
+        $route = route('videos.update', ['video' => $result['id']]);
+        $newCategory = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $category->delete();
+        $genre->categories()->sync([$category->id, $newCategory->id]);
+        $response = $this->withHeaders(['Accept' => 'application/json'])->put(
+            $route,
+            array_merge($data, [
+                'categories_id' => [$category->id, $newCategory->id]
+            ])
+        );
+
+        $response->assertJsonValidationErrors(['categories_id']);
+        $response->assertJsonFragment(
+            [
+                \Lang::get("validation.exists", ['attribute' => 'categories id'])
+            ]
+        );
+    }
+
+    /*public function testRelations()
     {
         $category = Category::create(['name' => 'test', 'description' => 'test']);
         $genre = Genre::create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
         $data = [
             'title' => 'video title',
             'description' => 'video description',
@@ -192,6 +235,8 @@ class VideoControllerTest extends TestCase
 
         $newCategory = Category::create(['name' => 'test', 'description' => 'test']);
         $newGenre = Genre::create(['name' => 'test']);
+        $genre->categories()->sync([$category->id, $newCategory->id]);
+        $newGenre->categories()->sync([$category->id, $newCategory->id]);
         $newData = array_merge($data, [
             'title' => 'new video title',
             'categories_id' => [$category->id, $newCategory->id],
@@ -219,7 +264,7 @@ class VideoControllerTest extends TestCase
             $this->assertEquals($cats[$i]['id'], $categoryGroup[$i]->id);
             $this->assertEquals($gens[$i]['id'], $genreGroup[$i]->id);
         }
-    }
+    }*/
 
     public function testInvalidationDataOnPost()
     {
@@ -260,6 +305,8 @@ class VideoControllerTest extends TestCase
     {
         $category = Category::create(['name' => 'test', 'description' => 'description']);
         $genre = Genre::create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
+        $file = UploadedFile::fake()->create('video.mp4')->size(Video::MAX_UPLOAD_SIZE + 1);
         $data = [
             'title' => 'new title',
             'description' => 'video description',
@@ -413,6 +460,41 @@ class VideoControllerTest extends TestCase
                     ]
                 ]
             ],
+            'genre_has_categories' => [
+                [
+                    'genres_id' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'params' => array_merge($data, ['categories_id' => ['test']])
+                    ]
+                ]
+            ],
+            'mimetypes' => [
+                [
+                    'video_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'routeParams' => ['values' => 'video/mp4'],
+                        'params' => array_merge($data, ['video_file' => 'video.mp3'])
+                    ]
+                ]
+            ],
+            'max.file' => [
+                [
+                    'video_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'routeParams' => ['max' => Video::MAX_UPLOAD_SIZE],
+                        'params' => array_merge($data, ['video_file' => $file])
+                    ]
+                ]
+            ],
         ];
     }
 
@@ -425,8 +507,9 @@ class VideoControllerTest extends TestCase
             'opened' => 'boolean',
             'rating' => 'required|in:' . implode(',', Video::RATING_LIST),
             'duration' => 'required|integer',
-            'categories_id' => 'required|array|exists:categories,id',
-            'genres_id' => 'required|array|exists:genres,id',
+            'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
+            'genres_id' => ['required', 'array', 'exists:genres,id,deleted_at,NULL'],
+            'video_file' => 'nullable|mimetypes:video/mp4|max:' . Video::MAX_UPLOAD_SIZE
         ];
     }
 }

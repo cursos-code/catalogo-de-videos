@@ -3,23 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\BasicCrudController;
-use App\Http\Controllers\Traits\TransactionOperations;
 use App\Models\Video;
+use App\Rules\GenreHasCategoriesRule;
 use Illuminate\Http\Request;
 
 class VideoController extends BasicCrudController
 {
 
-    use TransactionOperations;
+    private $customRules = [];
 
     public function store(Request $request)
     {
-        return $this->storeTransaction(Video::class, $request);
+        $this->createCustomRules($request);
+        $validData = $this->validate($request, $this->getRules());
+        $video = $this->getModel()::create($validData);
+        $video->refresh();
+        return $video;
     }
 
     public function update(Request $request, $id)
     {
-        return $this->updateTransaction($request, $id);
+        $this->createCustomRules($request);
+        $validData = $this->validate($request, $this->getUpdateRules());
+        $video = $this->findOrFail($id);
+        $video->update($validData);
+        $video->refresh();
+        return $video;
+    }
+
+    private function createCustomRules(Request $request)
+    {
+        $categories = $request->get('categories_id');
+        $this->customRules['genres_id'][] = new GenreHasCategoriesRule(is_array($categories) ? $categories : []);
     }
 
     protected function getModel()
@@ -29,16 +44,20 @@ class VideoController extends BasicCrudController
 
     protected function getRules()
     {
-        return [
-            'title' => 'required|max:255',
-            'description' => 'required',
-            'year_launched' => 'required|integer|date_format:Y',
-            'opened' => 'boolean',
-            'rating' => 'required|in:' . implode(',', Video::RATING_LIST),
-            'duration' => 'required|integer',
-            'categories_id' => 'required|array|exists:categories,id',
-            'genres_id' => 'required|array|exists:genres,id',
-        ];
+        return array_merge(
+            [
+                'title' => 'required|max:255',
+                'description' => 'required',
+                'year_launched' => 'required|integer|date_format:Y',
+                'opened' => 'boolean',
+                'rating' => 'required|in:' . implode(',', Video::RATING_LIST),
+                'duration' => 'required|integer',
+                'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
+                'genres_id' => ['required', 'array', 'exists:genres,id,deleted_at,NULL'],
+                'video_file' => 'nullable|mimetypes:video/mp4|max:'.Video::MAX_UPLOAD_SIZE
+            ],
+            $this->customRules
+        );
     }
 
     protected function getUpdateRules()
@@ -46,9 +65,4 @@ class VideoController extends BasicCrudController
         return $this->getRules();
     }
 
-    protected function handleRelations($model, Request $request)
-    {
-        $model->categories()->sync($request->get('categories_id'));
-        $model->genres()->sync($request->get('genres_id'));
-    }
 }

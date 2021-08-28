@@ -99,6 +99,90 @@ class GenreControllerTest extends TestCase
         $response->assertStatus(204);
     }
 
+    public function testInvalidateStoreWithDeletedCategory()
+    {
+        $route = route('genres.store');
+        $category = Category::create(['name' => 'test', 'description' => 'test']);
+        $category->delete();
+        $data = [
+            'name' => 'name',
+            'is_active' => false,
+            'categories_id' => [$category->id],
+        ];
+        $response = $this->withHeaders(['Accept' => 'application/json'])->post($route, $data);
+        $response->assertJsonValidationErrors(['categories_id']);
+        $response->assertJsonFragment(
+            [
+                \Lang::get("validation.exists", ['attribute' => 'categories id'])
+            ]
+        );
+    }
+
+    public function testInvalidateUpdateWithDeletedCategory()
+    {
+        $route = route('genres.store');
+        $category = Category::create(['name' => 'test', 'description' => 'test']);
+        $data = [
+            'name' => 'name',
+            'is_active' => false,
+            'categories_id' => [$category->id]
+        ];
+        $result = $this->withHeaders(['Accept' => 'application/json'])->post($route, $data)->json();
+
+        $route = route('genres.update', ['genre' => $result['id']]);
+        $newCategory = Category::create(['name' => 'test', 'description' => 'test']);
+        $category->delete();
+        $response = $this->withHeaders(['Accept' => 'application/json'])->put(
+            $route,
+            array_merge($data, [
+                'categories_id' => [$category->id, $newCategory->id]
+            ])
+        );
+
+        $response->assertJsonValidationErrors(['categories_id']);
+        $response->assertJsonFragment(
+            [
+                \Lang::get("validation.exists", ['attribute' => 'categories id'])
+            ]
+        );
+    }
+
+    public function testCategoriesSync()
+    {
+        $route = route('genres.store');
+        $categories = factory(Category::class, 3)->create()->pluck('id')->toArray();
+        $data = [
+            'name' => 'name',
+            'is_active' => false,
+            'categories_id' => [$categories[0]]
+        ];
+        $response = $this->withHeaders(['Accept' => 'application/json'])->post($route, $data);
+        $this->assertDatabaseHas('genres_categories', [
+            'category_id' => $categories[0],
+            'genre_id' => $response->json('id')
+        ]);
+
+        $route = route('genres.update', ['genre' => $response->json('id')]);
+        $response = $this->withHeaders(['Accept' => 'application/json'])->put(
+            $route,
+            array_merge($data, [
+                'categories_id' => [$categories[1], $categories[2]]
+            ])
+        );
+        $this->assertDatabaseMissing('genres_categories', [
+            'category_id' => $categories[0],
+            'genre_id' => $response->json('id')
+        ]);
+        $this->assertDatabaseHas('genres_categories', [
+            'category_id' => $categories[1],
+            'genre_id' => $response->json('id')
+        ]);
+        $this->assertDatabaseHas('genres_categories', [
+            'category_id' => $categories[2],
+            'genre_id' => $response->json('id')
+        ]);
+    }
+
     public function testInvalidationDataOnPost()
     {
         foreach ($this->getValidations() as $key => $validation) {
@@ -267,7 +351,7 @@ class GenreControllerTest extends TestCase
         return [
             'name' => 'required|max:255',
             'is_active' => 'boolean',
-            'categories_id' => 'required|array|exists:categories,id',
+            'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
         ];
     }
 }

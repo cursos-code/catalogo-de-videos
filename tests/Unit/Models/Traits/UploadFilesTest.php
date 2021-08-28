@@ -2,47 +2,102 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\Genre;
-use App\Models\Traits\Uuid;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
+use Tests\Stubs\Models\Traits\UploadFilesStub;
 use Tests\TestCase;
 
-class GenreTest extends TestCase
+class UploadFilesTest extends TestCase
 {
 
     /**
-     * @var Genre
+     * @var UploadFilesStub
      */
-    private $genre;
+    private $uploadtrait;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->genre = new Genre();
+        $this->uploadtrait = new UploadFilesStub();
     }
 
-    public function testIfUseTraits()
+    public function testUploadFile()
     {
-        $traits = [
-            SoftDeletes::class,
-            Uuid::class
-        ];
-        $classTraits = array_keys(class_uses(Genre::class));
-        $this->assertEquals($traits, $classTraits);
+        \Storage::fake();
+        $file = UploadedFile::fake()->create('video.mp4');
+        $this->uploadtrait->uploadFile($file);
+        \Storage::assertExists('1', $file->hashName());
     }
 
-    public function testIfPropertiesAreCorrect()
+    public function testUploadFiles()
     {
-        $fillable = ['name', 'is_active'];
-        $this->assertEquals($fillable, $this->genre->getFillable());
-        $dates = ['deleted_at', 'created_at', 'updated_at'];
-        foreach ($this->genre->getDates() as $date) {
-            $this->assertContains($date, $dates);
-        }
-        $casts = ['id' => 'string', 'is_active' => 'boolean', 'categories_id' => 'array'];
-        $this->assertEqualsCanonicalizing($casts, $this->genre->getCasts());
-        $incrementing = false;
-        $this->assertEquals($incrementing, $this->genre->getIncrementing());
+        \Storage::fake();
+        $file1 = UploadedFile::fake()->create('video.mp4');
+        $file2 = UploadedFile::fake()->create('video2.mp4');
+        $this->uploadtrait->uploadFiles([$file1, $file2]);
+        \Storage::assertExists("1/{$file1->hashName()}");
+        \Storage::assertExists("1/{$file2->hashName()}");
+    }
+
+    public function testDeleteFile()
+    {
+        \Storage::fake();
+        $file = UploadedFile::fake()->create('video.mp4');
+        $this->uploadtrait->uploadFile($file);
+        $this->uploadtrait->deleteFile($file->hashName());
+        \Storage::assertMissing("1/{$file->hashName()}");
+
+        $file = UploadedFile::fake()->create('video.mp4');
+        $this->uploadtrait->uploadFile($file);
+        $this->uploadtrait->deleteFile($file);
+        \Storage::assertMissing("1/{$file->hashName()}");
+    }
+
+    public function testDeleteFiles()
+    {
+        \Storage::fake();
+        $file1 = UploadedFile::fake()->create('video.mp4');
+        $file2 = UploadedFile::fake()->create('video2.mp4');
+        $this->uploadtrait->deleteFiles([$file1, $file2->hashName()]);
+        \Storage::assertMissing("1/{$file1->hashName()}");
+        \Storage::assertMissing("1/{$file2->hashName()}");
+    }
+
+    public function testExtractFiles()
+    {
+        $attributes = [];
+        $files = $this->uploadtrait::extractFiles($attributes);
+        $this->assertCount(0, $attributes);
+        $this->assertCount(0, $files);
+
+        $attributes = ['file1' => 'test'];
+        $files = $this->uploadtrait::extractFiles($attributes);
+        $this->assertEquals(['file1' => 'test'], $attributes);
+        $this->assertCount(1, $attributes);
+        $this->assertCount(0, $files);
+
+        $attributes = ['file1' => 'test', 'file2' => 'test'];
+        $files = $this->uploadtrait::extractFiles($attributes);
+        $this->assertEquals(['file1' => 'test', 'file2' => 'test'], $attributes);
+        $this->assertCount(2, $attributes);
+        $this->assertCount(0, $files);
+
+        $file1 = UploadedFile::fake()->create('video1.mp4');
+        $attributes = ['file1' => $file1, 'other' => 'test'];
+        $files = $this->uploadtrait::extractFiles($attributes);
+        $this->assertEquals(['file1' => $file1->hashName(), 'other' => 'test'], $attributes);
+        $this->assertCount(2, $attributes);
+        $this->assertEquals([$file1], $files);
+
+        $file2 = UploadedFile::fake()->create('video1.mp4');
+        $attributes = ['file1' => $file1, 'file2' => $file2, 'other' => 'test'];
+        $files = $this->uploadtrait::extractFiles($attributes);
+        $this->assertEquals([
+                                'file1' => $file1->hashName(),
+                                'file2' => $file2->hashName(),
+                                'other' => 'test'
+                            ], $attributes);
+        $this->assertCount(3, $attributes);
+        $this->assertEquals([$file1, $file2], $files);
     }
 
 }
