@@ -10,7 +10,6 @@ use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\Uuid;
 use Tests\Feature\Http\Controllers\Api\InvalidationTrait;
 use Tests\Feature\Http\Controllers\Api\ValidateRuleStruct;
-use Tests\Stubs\Models\VideoStub;
 
 class VideoControllerTest extends BaseVideos
 {
@@ -218,17 +217,10 @@ class VideoControllerTest extends BaseVideos
         $category = Category::create(['name' => 'test', 'description' => 'description']);
         $genre = Genre::create(['name' => 'test']);
         $genre->categories()->sync([$category->id]);
-        $file = UploadedFile::fake()->create('video.mp4')->size(Video::MAX_UPLOAD_THUMB_SIZE + 1);
-        $data = [
-            'title' => 'new title',
-            'description' => 'video description',
-            'year_launched' => 2015,
-            'opened' => true,
-            'rating' => '18',
-            'duration' => 60,
-            'categories_id' => [$category->id],
-            'genres_id' => [$genre->id],
-        ];
+        $data = $this->data + [
+                'categories_id' => [$category->id],
+                'genres_id' => [$genre->id]
+            ];
         return [
             'required' => [
                 [
@@ -395,15 +387,77 @@ class VideoControllerTest extends BaseVideos
                     ]
                 ]
             ],
+            'image' => [
+                [
+                    'banner_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'params' => array_merge($data, [
+                            'banner_file' => 'image.mp3'
+                        ])
+                    ],
+                    'trailer_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'params' => array_merge($data, [
+                            'banner_file' => 'image.mp3'
+                        ])
+                    ]
+                ],
+            ],
             'max.file' => [
                 [
+                    'video_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'routeParams' => ['max' => Video::MAX_UPLOAD_VIDEO_SIZE],
+                        'params' => array_merge($data, [
+                            'video_file' => UploadedFile::fake()->create('video.mp4')->size(
+                                Video::MAX_UPLOAD_VIDEO_SIZE + 1
+                            )
+                        ])
+                    ],
                     'thumb_file' => [
                         'route' => route(
                             $model ? 'videos.update' : 'videos.store',
                             $model ? ['video' => $model->id] : []
                         ),
                         'routeParams' => ['max' => Video::MAX_UPLOAD_THUMB_SIZE],
-                        'params' => array_merge($data, ['thumb_file' => $file])
+                        'params' => array_merge($data, [
+                            'thumb_file' => UploadedFile::fake()->create('video.mp4')->size(
+                                Video::MAX_UPLOAD_THUMB_SIZE + 1
+                            )
+                        ])
+                    ],
+                    'banner_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'routeParams' => ['max' => Video::MAX_UPLOAD_BANNER_SIZE],
+                        'params' => array_merge($data, [
+                            'banner_file' => UploadedFile::fake()->image('image.png')->size(
+                                Video::MAX_UPLOAD_BANNER_SIZE + 1
+                            )
+                        ])
+                    ],
+                    'trailer_file' => [
+                        'route' => route(
+                            $model ? 'videos.update' : 'videos.store',
+                            $model ? ['video' => $model->id] : []
+                        ),
+                        'routeParams' => ['max' => Video::MAX_UPLOAD_TRAILER_SIZE],
+                        'params' => array_merge($data, [
+                            'trailer_file' => UploadedFile::fake()->image('image.png')->size(
+                                Video::MAX_UPLOAD_TRAILER_SIZE + 1
+                            )
+                        ])
                     ]
                 ]
             ],

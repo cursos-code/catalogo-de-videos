@@ -5,7 +5,6 @@ namespace Tests\Feature\Http\Controllers\Api\Video;
 use App\Models\Video;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\Feature\Http\Controllers\Api\StoreTrait;
-use Tests\Stubs\Models\VideoStub;
 use Tests\TestCase;
 
 abstract class BaseVideos extends TestCase
@@ -45,9 +44,9 @@ abstract class BaseVideos extends TestCase
             'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
             'genres_id' => ['required', 'array', 'exists:genres,id,deleted_at,NULL'],
             'video_file' => 'nullable|mimetypes:video/mp4|max:' . Video::MAX_UPLOAD_VIDEO_SIZE,
-            'thumb_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_THUMB_SIZE,
-            'banner_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_BANNER_SIZE,
-            'trailer_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_TRAILER_SIZE,
+            'thumb_file' => 'nullable|image|max:' . Video::MAX_UPLOAD_THUMB_SIZE,
+            'banner_file' => 'nullable|image|max:' . Video::MAX_UPLOAD_BANNER_SIZE,
+            'trailer_file' => 'nullable|mimetypes:image/png|max:' . Video::MAX_UPLOAD_TRAILER_SIZE,
         ];
     }
 
@@ -70,4 +69,22 @@ abstract class BaseVideos extends TestCase
             'deleted_at'
         ];
     }
+
+    protected function getValidationFields($fields, $model, $data, $sendData = null)
+    {
+        $output = [];
+        foreach ($fields as $field) {
+            $output[] = [
+                $field => [
+                    'route' => route(
+                        $model ? 'videos.update' : 'videos.store',
+                        $model ? ['video' => $model->id] : []
+                    ),
+                    'params' => array_merge($data, [$field => $sendData])
+                ],
+            ];
+        }
+        return $output;
+    }
+
 }

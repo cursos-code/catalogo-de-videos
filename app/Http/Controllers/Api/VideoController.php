@@ -55,8 +55,8 @@ class VideoController extends BasicCrudController
                 'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
                 'genres_id' => ['required', 'array', 'exists:genres,id,deleted_at,NULL'],
                 'video_file' => 'nullable|mimetypes:video/mp4|max:'.Video::MAX_UPLOAD_VIDEO_SIZE,
-                'thumb_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_THUMB_SIZE,
-                'banner_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_BANNER_SIZE,
+                'thumb_file' => 'nullable|image|max:'.Video::MAX_UPLOAD_THUMB_SIZE,
+                'banner_file' => 'nullable|image|max:'.Video::MAX_UPLOAD_BANNER_SIZE,
                 'trailer_file' => 'nullable|mimetypes:image/png|max:'.Video::MAX_UPLOAD_TRAILER_SIZE,
             ],
             $this->customRules
