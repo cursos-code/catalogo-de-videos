@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Tests\Feature\Video;
 
 use App\Models\Category;
 use App\Models\Genre;
@@ -13,6 +13,24 @@ use Tests\TestCase;
 class VideoTest extends TestCase
 {
     use DatabaseMigrations;
+
+    /**
+     * @var array
+     */
+    private $data;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->data = [
+            'title' => 'video title',
+            'description' => 'video description',
+            'year_launched' => 2020,
+            'opened' => false,
+            'rating' => 'L',
+            'duration' => 60
+        ];
+    }
 
     public function testVideoFields()
     {
@@ -32,7 +50,10 @@ class VideoTest extends TestCase
                 'created_at',
                 'updated_at',
                 'deleted_at',
-                'video_file'
+                'video_file',
+                'thumb_file',
+                'banner_file',
+                'trailer_file'
             ],
             $videosKeys
         );
@@ -41,14 +62,7 @@ class VideoTest extends TestCase
     public function testCreatingNewVideo()
     {
         /** @var Video $video */
-        $video = Video::create([
-                                   'title' => 'video title',
-                                   'description' => 'video description',
-                                   'year_launched' => 2020,
-                                   'opened' => false,
-                                   'rating' => 'L',
-                                   'duration' => 60
-                               ]);
+        $video = Video::create($this->data);
         $video->refresh();
         $this->assertTrue(Uuid::isValid($video->id));
         $this->assertEquals($video->title, 'video title');
@@ -64,18 +78,10 @@ class VideoTest extends TestCase
         $video = factory(Video::class)->create(
             ['description' => 'video description']
         )->first();
-        $data = [
-            'title' => 'video title update',
-            'description' => 'video description update',
-            'year_launched' => 2020,
-            'opened' => false,
-            'rating' => 'L',
-            'duration' => 60
-        ];
-        $video->update($data);
+        $video->update($this->data);
 
         $this->assertTrue(Uuid::isValid($video->id));
-        foreach ($data as $key => $value) {
+        foreach ($this->data as $key => $value) {
             $this->assertEquals($value, $video->{$key});
         }
     }
@@ -97,18 +103,13 @@ class VideoTest extends TestCase
 
     public function testRollbackOnStore()
     {
-        $data = [
-            'title' => 'new title',
-            'description' => 'video description',
-            'year_launched' => 2015,
-            'opened' => true,
-            'rating' => '18',
-            'duration' => 60,
-            'categories_id' => [1],
-            'genres_id' => [1]
-        ];
         try {
-            Video::create($data);
+            Video::create(
+                $this->data + [
+                    'categories_id' => [1],
+                    'genres_id' => [1]
+                ]
+            );
         } catch (QueryException $e) {
             self::assertCount(0, Video::all());
         }
@@ -116,19 +117,11 @@ class VideoTest extends TestCase
 
     public function testRollbackOnUpdate()
     {
-        $data = [
-            'title' => 'title',
-            'description' => 'video description',
-            'year_launched' => 2015,
-            'opened' => true,
-            'rating' => '18',
-            'duration' => 60,
-        ];
-        $video = Video::create($data);
+        $video = Video::create($this->data);
         $title = $video->title;
         try {
             $video->update(
-                array_merge($data, [
+                array_merge($this->data, [
                     'title' => 'new title',
                     'categories_id' => [1],
                     'genres_id' => [1]
@@ -175,17 +168,12 @@ class VideoTest extends TestCase
         $categories = factory(Category::class, 3)->create()->pluck('id')->toArray();
         $genre = factory(Genre::class)->create();
         $genre->categories()->sync([$categories[0]]);
-        $data = [
-            'title' => 'video title',
-            'description' => 'video description',
-            'year_launched' => 2020,
-            'opened' => false,
-            'rating' => 'L',
-            'duration' => 60,
-            'categories_id' => [$categories[0]],
-            'genres_id' => [$genre->id]
-        ];
-        $video = Video::create($data);
+        $video = Video::create(
+            $this->data + [
+                'categories_id' => [$categories[0]],
+                'genres_id' => [$genre->id]
+            ]
+        );
         $this->assertDatabaseHas('videos_categories', [
             'category_id' => $categories[0],
             'video_id' => $video->id
@@ -193,7 +181,7 @@ class VideoTest extends TestCase
 
         $genre->categories()->sync([$categories[1], $categories[2]]);
         $video->update(
-            array_merge($data, [
+            array_merge($this->data, [
                 'categories_id' => [$categories[1], $categories[2]]
             ])
         );
@@ -218,16 +206,10 @@ class VideoTest extends TestCase
         foreach ($genres as &$genre) {
             $genre->categories()->sync([$category->id]);
         }
-        $data = [
-            'title' => 'video title',
-            'description' => 'video description',
-            'year_launched' => 2020,
-            'opened' => false,
-            'rating' => 'L',
-            'duration' => 60,
+        $data = array_merge($this->data, [
             'categories_id' => [$category->id],
             'genres_id' => [$genres[0]->id]
-        ];
+        ]);
         $video = Video::create($data);
         $this->assertDatabaseHas('videos_genres', [
             'genre_id' => $genres[0]->id,

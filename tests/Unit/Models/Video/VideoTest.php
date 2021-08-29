@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Models;
+namespace Tests\Unit\Models\Video;
 
 use App\Models\Traits\UploadFiles;
 use App\Models\Traits\Uuid;
@@ -14,12 +14,12 @@ class VideoTest extends TestCase
     /**
      * @var Video
      */
-    private $category;
+    private $video;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->category = new Video();
+        $this->video = new Video();
     }
 
     public function testIfUseTraits()
@@ -42,12 +42,18 @@ class VideoTest extends TestCase
             'opened',
             'rating',
             'duration',
+            'video_file',
+            'thumb_file',
+            'banner_file',
+            'trailer_file'
         ];
-        $this->assertEquals($fillable, $this->category->getFillable());
+        $this->assertEquals($fillable, $this->video->getFillable());
+
         $dates = ['deleted_at', 'created_at', 'updated_at'];
-        foreach ($this->category->getDates() as $date) {
+        foreach ($this->video->getDates() as $date) {
             $this->assertContains($date, $dates);
         }
+
         $casts = [
             'id' => 'string',
             'opened' => 'boolean',
@@ -56,9 +62,13 @@ class VideoTest extends TestCase
             'categories_id' => 'array',
             'genres_id' => 'array',
         ];
-        $this->assertEqualsCanonicalizing($casts, $this->category->getCasts());
+        $this->assertEqualsCanonicalizing($casts, $this->video->getCasts());
+
         $incrementing = false;
-        $this->assertEquals($incrementing, $this->category->getIncrementing());
+        $this->assertEquals($incrementing, $this->video->getIncrementing());
+
+        $fileFields = ['video_file', 'thumb_file', 'banner_file', 'trailer_file'];
+        $this->assertEqualsCanonicalizing($fileFields, $this->video::$fileFields);
     }
 
 }

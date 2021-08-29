@@ -1,7 +1,27 @@
 FROM php:7.3.6-fpm-alpine3.9
 
 RUN apk add --no-cache shadow openssl bash mysql-client nodejs npm git
+RUN apk add --update --no-cache --virtual .ext-deps \
+        libjpeg-turbo-dev \
+        libwebp-dev \
+        libpng-dev \
+        freetype-dev \
+        libmcrypt-dev \
+        autoconf \
+        g++ \
+        make \
+        openssl-dev \
+        icu-dev
+
 RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-configure gd \
+            --with-jpeg-dir=/usr/include \
+            --with-png-dir=/usr/include \
+            --with-webp-dir=/usr/include \
+            --with-freetype-dir=/usr/include \
+    && docker-php-ext-install gd
+
+RUN pecl install xdebug-3.0.4
 
 RUN touch /home/www-data/.bashrc | echo "PS1='\w\$ '" >> /home/www-data/.bashrc
 

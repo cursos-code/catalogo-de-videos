@@ -7,6 +7,11 @@ use Illuminate\Database\Schema\Blueprint;
 
 class VideoStub extends Model
 {
+    const MAX_UPLOAD_VIDEO_SIZE = 10;
+    const MAX_UPLOAD_THUMB_SIZE = 10;
+    const MAX_UPLOAD_BANNER_SIZE = 10;
+    const MAX_UPLOAD_TRAILER_SIZE = 10;
+
     protected $table = 'videos_stub';
     protected $fillable = [
         'title',
