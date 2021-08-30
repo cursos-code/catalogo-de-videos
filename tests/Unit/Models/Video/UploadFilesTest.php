@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Models;
+namespace Tests\Unit\Models\Video;
 
 use Illuminate\Http\UploadedFile;
 use Tests\Stubs\Models\Traits\UploadFilesStub;
@@ -62,6 +62,22 @@ class UploadFilesTest extends TestCase
         \Storage::assertMissing("1/{$file2->hashName()}");
     }
 
+    public function testDeleteOldFile()
+    {
+        \Storage::fake();
+        $file1 = UploadedFile::fake()->create('video.mp4');
+        $file2 = UploadedFile::fake()->create('video.mp4');
+        $this->uploadtrait->uploadFile($file1);
+        $this->uploadtrait->uploadFile($file2);
+        $this->uploadtrait->deleteOldFiles();
+        $this->assertCount(2, \Storage::allFiles());
+
+        $this->uploadtrait->oldFiles = [$file1->hashName()];
+        $this->uploadtrait->deleteOldFiles();
+        \Storage::assertMissing("1/{$file1->hashName()}");
+        \Storage::assertExists("1/{$file2->hashName()}");
+    }
+
     public function testExtractFiles()
     {
         $attributes = [];
@@ -99,5 +115,12 @@ class UploadFilesTest extends TestCase
         $this->assertCount(3, $attributes);
         $this->assertEquals([$file1, $file2], $files);
     }
+
+//    public function testUploadFilesToGcs()
+//    {
+//        $file1 = UploadedFile::fake()->create('video.mp4');
+//        $this->uploadtrait->uploadFiles([$file1]);
+//        \Storage::assertExists("1/{$file1->hashName()}");
+//    }
 
 }

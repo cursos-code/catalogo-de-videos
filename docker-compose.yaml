@@ -17,6 +17,7 @@ services:
         volumes:
             - .:/var/www
             - ./.docker/php-fpm/conf.d/general.ini:/usr/local/etc/php/conf.d/general.ini
+            - ./.docker/php-fpm/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
         networks:
             - app-network
         depends_on:

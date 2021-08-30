@@ -12,11 +12,14 @@ class Video extends Model
 
     use SoftDeletes, Uuid, UploadFiles;
 
-    public static $fileFields = ['video_file'];
+    public static $fileFields = ['video_file', 'thumb_file', 'banner_file', 'trailer_file'];
 
     const RATING_LIST = ['L', '10', '14', '16', '18'];
 
-    const MAX_UPLOAD_SIZE = 100;
+    const MAX_UPLOAD_VIDEO_SIZE = 50 * 1024 * 1024;
+    const MAX_UPLOAD_THUMB_SIZE = 5 * 1024;
+    const MAX_UPLOAD_BANNER_SIZE = 10 * 1024;
+    const MAX_UPLOAD_TRAILER_SIZE = 1 * 1024 * 1024;
 
     protected $fillable = [
         'title',
@@ -25,6 +28,10 @@ class Video extends Model
         'opened',
         'rating',
         'duration',
+        'video_file',
+        'thumb_file',
+        'banner_file',
+        'trailer_file'
     ];
     protected $dates = ['deleted_at'];
     protected $casts = [
@@ -46,12 +53,11 @@ class Video extends Model
             $obj = static::query()->create($attributes);
             static::handleRelations($obj, $attributes);
             $obj->uploadFiles($files);
-            // TODO: upload dos arquivos
             \DB::commit();
             return $obj;
         } catch (\Exception $e) {
             if (isset($obj)) {
-                //TODO: excluir arquivos uploadados
+                $obj->deleteFiles($files);
             }
             \DB::rollBack();
             throw $e;
@@ -60,18 +66,21 @@ class Video extends Model
 
     public function update(array $attributes = [], array $options = [])
     {
+        $files = self::extractFiles($attributes);
         try {
             \DB::beginTransaction();
             $saved = parent::update($attributes, $options);
             static::handleRelations($this, $attributes);
-            if (isset($saved)) {
-                // TODO: upload dos arquivos
-                // excluir os antigos
+            if ($saved) {
+                $this->uploadFiles($files);
             }
             \DB::commit();
+            if ($saved && count($files)) {
+                $this->deleteOldFiles();
+            }
             return $saved;
         } catch (\Exception $e) {
-            //TODO: excluir arquivos uploadados
+            $this->deleteFiles($files);
             \DB::rollBack();
             throw $e;
         }
@@ -100,5 +109,25 @@ class Video extends Model
     protected function uploadDir()
     {
         return $this->id;
+    }
+
+    public function getThumbFileUrlAttribute()
+    {
+        return $this->thumb_file ? $this->getFileUrl($this->thumb_file) : null;
+    }
+
+    public function getBannerFileUrlAttribute()
+    {
+        return $this->banner_file ? $this->getFileUrl($this->banner_file) : null;
+    }
+
+    public function getTrailerFileUrlAttribute()
+    {
+        return $this->trailer_file ? $this->getFileUrl($this->trailer_file) : null;
+    }
+
+    public function getVideoFileUrlAttribute()
+    {
+        return $this->video_file ? $this->getFileUrl($this->video_file) : null;
     }
 }
