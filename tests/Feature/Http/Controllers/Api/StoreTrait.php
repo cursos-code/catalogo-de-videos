@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Api;
 
 use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 trait StoreTrait
 {
@@ -43,24 +44,41 @@ trait StoreTrait
     {
         $regex = '/^[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}$/';
         foreach ($testRegex as $test) {
-            $this->assertRegExp($regex, $response->json($test));
+            $this->assertRegExp($regex, $this->getFieldFromResponse($response, $test));
         }
+    }
+
+    protected function assertResource(TestResponse $response, JsonResource $resource)
+    {
+        $data = $resource->response()->getData(true);
+        $wrapped = $data['data'] ? $data : $data['data'];
+        $response->assertJson($wrapped);
     }
 
     private function assertInDatabase(TestResponse $response, array $testDatabase)
     {
         $model = $this->getModel();
-        $this->assertDatabaseHas((new $model)->getTable(), $testDatabase + ['id' => $response->json(['id'])]);
+        $this->assertDatabaseHas(
+            (new $model)->getTable(),
+            $testDatabase + ['id' => $this->getFieldFromResponse($response)]
+        );
     }
 
     private function assertInJson(TestResponse $response, array $testDatabase)
     {
-        $response->assertJsonFragment($testDatabase + ['id' => $response->json(['id'])]);
+        $response->assertJsonFragment($testDatabase + ['id' => $this->getFieldFromResponse($response)]);
     }
 
     private function assertInStructure(TestResponse $response, array $testStructure)
     {
-        $response->assertJsonStructure($testStructure);
+        $wrapData = $response->json('data') ? $testStructure : ['data' => $testStructure];
+        dd($response->json());
+        $response->assertJsonStructure($wrapData);
+    }
+
+    private function getFieldFromResponse(TestResponse $response, $field = 'id')
+    {
+        return $response->json([$field]) ?? $response->json(['data'])[$field];
     }
 
 }

@@ -12,7 +12,7 @@ class GenreSeeder extends Seeder
     public function run()
     {
         $categories = \App\Models\Category::all();
-        factory(\App\Models\Genre::class, 25)
+        factory(\App\Models\Genre::class, 10)
             ->create()
             ->each(function (\App\Models\Genre $genre) use ($categories) {
                 $categoriesId = $categories->random(3)->pluck('id')->toArray();

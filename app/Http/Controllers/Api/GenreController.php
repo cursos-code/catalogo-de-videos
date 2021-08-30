@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\BasicCrudController;
 use App\Http\Controllers\Traits\TransactionOperations;
+use App\Http\Resources\GenreResource;
 use App\Models\Genre;
 use Illuminate\Http\Request;
 
@@ -45,5 +46,15 @@ class GenreController extends BasicCrudController
     protected function getUpdateRules()
     {
         return $this->getRules();
+    }
+
+    protected function getResource()
+    {
+        return GenreResource::class;
+    }
+
+    protected function getResourceCollection()
+    {
+        return $this->getResource();
     }
 }

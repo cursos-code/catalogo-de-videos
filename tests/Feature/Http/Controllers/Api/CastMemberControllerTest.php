@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\CastMemberController;
+use App\Http\Resources\CastMemberResource;
 use App\Models\CastMember;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Ramsey\Uuid\Uuid;
@@ -24,7 +25,17 @@ class CastMemberControllerTest extends TestCase
         factory(CastMember::class, 2)->create();
         $response = $this->get(route('cast_members.index'));
 
-        $response->assertStatus(200)->assertJson(CastMember::all()->toArray());
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [],
+                    'links' => [],
+                    'meta' => [],
+                ]
+            )->assertJson(['meta' => ['per_page' => 15]]);
+
+        $resource = CastMemberResource::collection(collect([CastMember::find($response->json('data.id'))]));
+        $response->assertJson($resource->response()->getData(true));
     }
 
     public function testShow()
@@ -32,7 +43,10 @@ class CastMemberControllerTest extends TestCase
         $castMember = factory(CastMember::class)->create();
         $response = $this->get(route('cast_members.show', ['cast_member' => $castMember->id]));
 
-        $response->assertStatus(200)->assertJson($castMember->toArray());
+        $response->assertStatus(200);
+
+        $resource = new CastMemberResource(CastMember::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testStore()
@@ -49,6 +63,9 @@ class CastMemberControllerTest extends TestCase
         );
 
         $this->assertDateByRegex($response, ['created_at', 'updated_at']);
+
+        $resource = new CastMemberResource(CastMember::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testUpdate()
