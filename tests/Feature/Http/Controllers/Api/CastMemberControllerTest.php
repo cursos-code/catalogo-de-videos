@@ -127,7 +127,7 @@ class CastMemberControllerTest extends TestCase
 
     protected function getStructure(): array
     {
-        return ['id', 'name', 'type', 'created_at', 'updated_at', 'deleted_at'];
+        return ['data' => ['id', 'name', 'type', 'created_at', 'updated_at', 'deleted_at']];
     }
 
     protected function getValidations($model = null)

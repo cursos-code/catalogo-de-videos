@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Api\Video;
 
 use App\Http\Controllers\Api\VideoController;
+use App\Http\Resources\VideoResource;
 use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Video;
@@ -26,7 +27,17 @@ class VideoControllerTest extends BaseVideos
         factory(Video::class, 2)->create();
         $response = $this->get(route('videos.index'));
 
-        $response->assertStatus(200)->assertJson(Video::all()->toArray());
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [],
+                    'links' => [],
+                    'meta' => [],
+                ]
+            )->assertJson(['meta' => ['per_page' => 15]]);
+
+        $resource = VideoResource::collection(collect([Video::find($response->json('data.id'))]));
+        $response->assertJson($resource->response()->getData(true));
     }
 
     public function testShow()
@@ -34,7 +45,10 @@ class VideoControllerTest extends BaseVideos
         $video = factory(Video::class)->create();
         $response = $this->get(route('videos.show', ['video' => $video->id]));
 
-        $response->assertStatus(200)->assertJson($video->toArray());
+        $response->assertStatus(200);
+
+        $resource = new VideoResource(Video::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testStore()

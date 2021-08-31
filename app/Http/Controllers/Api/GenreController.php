@@ -15,13 +15,14 @@ class GenreController extends BasicCrudController
 
     public function store(Request $request)
     {
-        $a = $this->storeTransaction(Genre::class, $request);
-        return $a;
+        $resource = $this->getResource();
+        return new $resource($this->storeTransaction(Genre::class, $request));
     }
 
     public function update(Request $request, $id)
     {
-        return $this->updateTransaction($request, $id);
+        $resource = $this->getResource();
+        return new $resource($this->updateTransaction($request, $id));
     }
 
     protected function handleRelations($model, Request $request)

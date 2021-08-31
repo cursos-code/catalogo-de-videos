@@ -71,9 +71,7 @@ trait StoreTrait
 
     private function assertInStructure(TestResponse $response, array $testStructure)
     {
-        $wrapData = $response->json('data') ? $testStructure : ['data' => $testStructure];
-        dd($response->json());
-        $response->assertJsonStructure($wrapData);
+        $response->assertJsonStructure($testStructure);
     }
 
     private function getFieldFromResponse(TestResponse $response, $field = 'id')

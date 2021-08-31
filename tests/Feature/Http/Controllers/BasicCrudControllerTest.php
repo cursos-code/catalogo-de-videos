@@ -129,7 +129,10 @@ class BasicCrudControllerTest extends TestCase
                 ->once()
                 ->andReturn($modelStub->toArray());
             $response = (new $stub['controller'])->update($request, $modelStub->id);
-            $this->assertEquals((new $stub['model'])::find($modelStub->id)->toArray(), $response->toArray());
+            $this->assertEquals(
+                (new $stub['model'])::find($modelStub->id)->toArray(),
+                $response->jsonSerialize()
+            );
         }
     }
 
