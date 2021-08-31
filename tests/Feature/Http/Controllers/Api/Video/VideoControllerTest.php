@@ -24,7 +24,15 @@ class VideoControllerTest extends BaseVideos
 
     public function testIndex()
     {
-        factory(Video::class, 2)->create();
+        $category = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $genre = factory(Genre::class)->create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
+        Video::create(
+            $this->data + [
+                'categories_id' => [$category->id],
+                'genres_id' => [$genre->id]
+            ]
+        );
         $response = $this->get(route('videos.index'));
 
         $response->assertStatus(200)
@@ -35,14 +43,19 @@ class VideoControllerTest extends BaseVideos
                     'meta' => [],
                 ]
             )->assertJson(['meta' => ['per_page' => 15]]);
-
-        $resource = VideoResource::collection(collect([Video::find($response->json('data.id'))]));
-        $response->assertJson($resource->response()->getData(true));
     }
 
     public function testShow()
     {
-        $video = factory(Video::class)->create();
+        $category = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $genre = factory(Genre::class)->create(['name' => 'test']);
+        $genre->categories()->sync([$category->id]);
+        $video = Video::create(
+            $this->data + [
+                'categories_id' => [$category->id],
+                'genres_id' => [$genre->id]
+            ]
+        );
         $response = $this->get(route('videos.show', ['video' => $video->id]));
 
         $response->assertStatus(200);
