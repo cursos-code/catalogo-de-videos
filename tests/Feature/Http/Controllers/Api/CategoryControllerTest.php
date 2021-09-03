@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Ramsey\Uuid\Uuid;
@@ -24,7 +25,17 @@ class CategoryControllerTest extends TestCase
         factory(Category::class, 2)->create();
         $response = $this->get(route('categories.index'));
 
-        $response->assertStatus(200)->assertJson(Category::all()->toArray());
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [],
+                    'links' => [],
+                    'meta' => [],
+                ]
+            )->assertJson(['meta' => ['per_page' => 15]]);
+
+        $resource = CategoryResource::collection(collect([Category::find($response->json('data.id'))]));
+        $response->assertJson($resource->response()->getData(true));
     }
 
     public function testShow()
@@ -32,7 +43,10 @@ class CategoryControllerTest extends TestCase
         $category = factory(Category::class)->create();
         $response = $this->get(route('categories.show', ['category' => $category->id]));
 
-        $response->assertStatus(200)->assertJson($category->toArray());
+        $response->assertStatus(200);
+
+        $resource = new CategoryResource(Category::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testStore()
@@ -55,6 +69,9 @@ class CategoryControllerTest extends TestCase
         $response = $this->assertStore($route, $data, $data + ['deleted_at' => null]);
 
         $this->assertDateByRegex($response, ['created_at', 'updated_at']);
+
+        $resource = new CategoryResource(Category::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testUpdate()
@@ -79,6 +96,9 @@ class CategoryControllerTest extends TestCase
         $response = $this->assertUpdate($route, $data, $data + ['deleted_at' => null]);
 
         $this->assertDateByRegex($response, ['created_at', 'updated_at']);
+
+        $resource = new CategoryResource(Category::find($response->json('data.id')));
+        $this->assertResource($response, $resource);
     }
 
     public function testDelete()
@@ -119,7 +139,7 @@ class CategoryControllerTest extends TestCase
 
     protected function getStructure(): array
     {
-        return ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at', 'deleted_at'];
+        return ['data' => ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at', 'deleted_at']];
     }
 
     protected function getValidations($model = null)

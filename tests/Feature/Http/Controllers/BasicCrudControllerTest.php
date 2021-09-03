@@ -44,7 +44,12 @@ class BasicCrudControllerTest extends TestCase
     {
         foreach ($this->stubs as $stub) {
             $modelStub = $stub['model']::create($stub['create']);
-            $this->assertEquals([$modelStub->toArray()], (new $stub['controller'])->index()->toArray());
+            $modelStub->refresh();
+
+            $this->assertEqualsCanonicalizing(
+                (new $stub['controller'])->index()->response()->getData(true)['data'][0],
+                $modelStub->toArray()
+            );
         }
     }
 
@@ -69,7 +74,10 @@ class BasicCrudControllerTest extends TestCase
                 ->once()
                 ->andReturn($stub['create']);
             $response = (new $stub['controller'])->store($request);
-            $this->assertEquals((new $stub['model'])::find(1)->toArray(), $response->toArray());
+            $this->assertEquals(
+                ['data' => (new $stub['model'])::find(1)->toArray()],
+                $response->response()->getData(true)
+            );
         }
     }
 
@@ -121,7 +129,10 @@ class BasicCrudControllerTest extends TestCase
                 ->once()
                 ->andReturn($modelStub->toArray());
             $response = (new $stub['controller'])->update($request, $modelStub->id);
-            $this->assertEquals((new $stub['model'])::find($modelStub->id)->toArray(), $response->toArray());
+            $this->assertEquals(
+                (new $stub['model'])::find($modelStub->id)->toArray(),
+                $response->jsonSerialize()
+            );
         }
     }
 

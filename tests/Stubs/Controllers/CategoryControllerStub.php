@@ -4,6 +4,7 @@ namespace Tests\Stubs\Controllers;
 
 use App\Http\Controllers\BasicCrudController;
 use Tests\Stubs\Models\CategoryStub;
+use Tests\Stubs\Resources\ResourceStub;
 
 class CategoryControllerStub extends BasicCrudController
 {
@@ -25,5 +26,15 @@ class CategoryControllerStub extends BasicCrudController
     protected function getUpdateRules()
     {
         return $this->getRules();
+    }
+
+    protected function getResource()
+    {
+        return ResourceStub::class;
+    }
+
+    protected function getResourceCollection()
+    {
+        return $this->getResource();
     }
 }

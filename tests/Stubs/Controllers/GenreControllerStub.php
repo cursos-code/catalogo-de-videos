@@ -4,6 +4,7 @@ namespace Tests\Stubs\Controllers;
 
 use App\Http\Controllers\BasicCrudController;
 use Tests\Stubs\Models\GenreStub;
+use Tests\Stubs\Resources\ResourceStub;
 
 class GenreControllerStub extends BasicCrudController
 {
@@ -24,5 +25,15 @@ class GenreControllerStub extends BasicCrudController
     protected function getUpdateRules()
     {
         return $this->getRules();
+    }
+
+    protected function getResource()
+    {
+        return ResourceStub::class;
+    }
+
+    protected function getResourceCollection()
+    {
+        return $this->getResource();
     }
 }

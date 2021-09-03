@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\BasicCrudController;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -29,4 +30,13 @@ class CategoryController extends BasicCrudController
         return $this->getRules();
     }
 
+    protected function getResource()
+    {
+        return CategoryResource::class;
+    }
+
+    protected function getResourceCollection()
+    {
+        return $this->getResource();
+    }
 }
