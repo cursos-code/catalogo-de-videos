@@ -25,7 +25,9 @@ class GenreControllerTest extends TestCase
 
     public function testIndex()
     {
-        factory(Genre::class, 2)->create();
+        $genre = Genre::create(['name' => 'test']);
+        $category = factory(Category::class)->create(['name' => 'test', 'description' => 'test']);
+        $genre->categories()->sync([$category->id]);
         $response = $this->get(route('genres.index'));
 
         $response->assertStatus(200)
@@ -36,9 +38,6 @@ class GenreControllerTest extends TestCase
                     'meta' => [],
                 ]
             )->assertJson(['meta' => ['per_page' => 15]]);
-
-        $resource = GenreResource::collection(collect([Genre::find($response->json('data.id'))]));
-        $response->assertJson($resource->response()->getData(true));
     }
 
     public function testShow()
