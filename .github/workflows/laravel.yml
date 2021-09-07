@@ -17,7 +17,7 @@ jobs:
         image: mysql:5.7
         env:
           ## Accessing to Github secrets, where you can store your configuration
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: db_test
         ## map the "external" 33306 port with the "internal" 3306
         ports:
@@ -55,7 +55,7 @@ jobs:
           DB_DATABASE: db_test
           DB_PORT: 33306
           DB_USER: root
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_PASSWORD: root
         run: |
           php artisan migrate
           vendor/bin/phpunit
