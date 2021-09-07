@@ -12,14 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
-        with:
-          php-version: '7.3'
       - uses: actions/checkout@v2
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-      - name: Copy .env.testing
-        run: php -r "file_exists('.env.testing') || copy('.env.testing.example', '.env.testing');"
       - name: Install Dependencies
         run: composer install
       - name: Generate key
@@ -30,8 +25,15 @@ jobs:
         run: |
           mkdir -p database
           touch database/database.sqlite
+      - name: Compile assets
+        run: |
+          npm install
+          npm run production
       - name: Execute tests (Unit and Feature tests) via PHPUnit
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
+          CACHE_DRIVER: array
+          SESSION_DRIVER: array
+          QUEUE_DRIVER: sync
         run: vendor/bin/phpunit
