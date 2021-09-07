@@ -8,7 +8,7 @@ on:
 
 jobs:
   laravel-test-withdb:
-    runs-on: ubuntu-latest
+    runs-on: php:7.3.6-fpm-alpine3.9
 
     services:
       # mysql-service Label used to access the service container
@@ -17,7 +17,7 @@ jobs:
         image: mysql:5.7
         env:
           ## Accessing to Github secrets, where you can store your configuration
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
           MYSQL_DATABASE: db_test
         ## map the "external" 33306 port with the "internal" 3306
         ports:
@@ -29,9 +29,6 @@ jobs:
           --health-timeout=5s
           --health-retries=3
     steps:
-      - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
-          with:
-            php-version: '8.0'
       - uses: actions/checkout@v2
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
@@ -55,7 +52,7 @@ jobs:
           DB_DATABASE: db_test
           DB_PORT: 33306
           DB_USER: root
-          DB_PASSWORD: root
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           php artisan migrate
           vendor/bin/phpunit
